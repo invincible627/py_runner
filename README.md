@@ -20,9 +20,9 @@ Weakness: not supporting input in Python
 availeble language in robot
 english
 ##### Made by
-powerful392
+invincible627
 ###### GitHub profile link
-https://github.com/powerful392
+https://github.com/invincible627
 
 
 # اجرا کننده ی کد پایتون
@@ -48,6 +48,6 @@ time, aiosqlite, aiofiles, subprocess, os, sqlite3, apscheduler, datetime, pytho
 زبان در دسترس در ربات
 انگلیسی
 ##### ساخته شده توسط
-powerful392
+invincible627
 ###### لینک پروفایل گیتهاب
-https://github.com/powerful392
+https://github.com/invincible627
