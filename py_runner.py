@@ -308,6 +308,11 @@ async def handle_user_messages(update: Update, context: ContextTypes.DEFAULT_TYP
             alert_to_admin_text = f" security alert: user {user_id_message}, entered bad code! {user_message_content_text}"
             await context.bot.send_message(chat_id=administrator_id, text=alert_to_admin_text)
             return
+    if "input" in user_message_content_text.replace(" ", "").lower():
+        input_not_exceptable = "dear friend, cannot run codes with input due to telegram's limits"
+        await update.message.reply_text(input_not_exceptable)
+        log_event(f"user tried to use input() in: {user_message_content_text}")
+        return
     python_file_name_save = f"{user_id_message}.py"
     await context.bot.send_chat_action(chat_id=update.effective_chat.id, action="typing")
     await log_event(user_id_message, "bot action: typing status shown to user", user_metadata_message)
@@ -464,6 +469,9 @@ async def handle_document_upload(update: Update, context: ContextTypes.DEFAULT_T
     user_id_doc = str(update.message.from_user.id)
     user_metadata_doc = update.message.from_user
     if await check_banned_users(user_id_doc):
+        ban_reply_run_file = "you are banned from bot by admin"
+        await update.message.reply_text(ban_reply_run_file)
+        await log_event(user_id_doc, f"bot sent: {ban_reply_run_file}", user_metadata_run_file)
         return
     received_document = update.message.document
     file_extension = os.path.splitext(received_document.file_name)[1]
@@ -472,6 +480,14 @@ async def handle_document_upload(update: Update, context: ContextTypes.DEFAULT_T
         telegram_file_object = await context.bot.get_file(received_document.file_id)
         await telegram_file_object.download_to_drive(save_path)
         await log_event(user_id_doc, f"uploaded file: {received_document.file_name}", user_metadata_doc, save_path)
+        async with aiofiles.open(save_path, "r", encoding='utf-8') as f:
+            content = await f.read()
+            if "input(" in content:
+                await update.message.reply_text("dear user, cannot run code with input due to telegram's limits")
+                await log_event(f"{user_id_doc}, user uploaded a file with input, {user_metadata_doc}")
+                if os.path.exists(save_path):
+                    os.remove(save_path)
+                    return
         is_file_malicious = await scan_file_security(save_path)
         if is_file_malicious:
             alert_text = f"security alert! user {user_id_doc} sent a malicious file. file name: {received_document.file_name}"
@@ -484,8 +500,9 @@ async def handle_document_upload(update: Update, context: ContextTypes.DEFAULT_T
             await update.message.reply_text(denial_message)
             await log_event(user_id_doc, f"bot sent: {denial_message}", user_metadata_doc)
             return
-        success_message = f"file {received_document.file_name} received successfully."
-        await update.message.reply_text(success_message)
+        run_button = InlineKeyboardMarkup([[InlineKeyboardButton("Run", callback_data="run_code")]])
+        success_message = f"file {received_document.file_name} received successfully. clic the run button to run your code"
+        await update.message.reply_text(success_message, reply_markup=run_button)
         await log_event(user_id_doc, f"bot sent: {success_message}", user_metadata_doc)
     except Exception as e:
         await handle_system_error(update, context, e, "handle_document_upload")
